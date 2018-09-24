@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+   <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+   <title>Ubigeos | Mapa </title>
+   <script src="https://maps.googleapis.com/maps/api/js?key={{ GOOGLE_API_KEY }}" type="text/javascript"></script>
+   <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+   <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">   
+</head>
+
+<body>
+    <nav class="navbar navbar-default">
+        <div class="container-fluid">
+            <div class="navbar-header">
+                <a href="" class="navbar-brand">TSPMAP</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <form action="" method="post">
+            {% csrf_token %}
+                <div class="form-group">
+                    {% for f in form.visible_fields %}
+                        {{ f.label_tag }}
+                        {{ f }}
+                    {% endfor %}
+                </div>
+                <input type="submit" class="btn btn-primary" value="Enviar">
+        </form>
+        <br>
+        
+        {% if position_render %}
+            <div id="map" style="width: 500px; height: 400px;"></div>
+        {% endif %}
+    </div>
+
+   <script type="text/javascript">
+       var locations = [];
+       var locations_polyline  = [];
+
+        {% for p in position_render %}
+            locations.push([
+                '{{ p.nombre_cp }}', {{ p.latitud }}, {{ p.longitud }}
+            ]);
+
+            locations_polyline.push({
+                lat: {{ p.latitud }}, lng: {{ p.longitud }}
+            });            
+        {% endfor %}
+
+        var map = new google.maps.Map(document.getElementById('map'), {
+           zoom: 5,
+           center: new google.maps.LatLng(-10.151093, -75.311132),
+           mapTypeId: google.maps.MapTypeId.ROADMAP
+        });
+
+        var infowindow = new google.maps.InfoWindow();
+
+        var marker, i;
+
+        for (i = 0; i < locations.length; i++) {
+           marker = new google.maps.Marker({
+               position: new google.maps.LatLng(locations[i][1], locations[i][2]),
+               map: map
+           });
+
+           google.maps.event.addListener(marker, 'click', (function(marker, i) {
+               return function() {
+                   infowindow.setContent(locations[i][0]);
+                   infowindow.open(map, marker);
+               }
+           })(marker, i));
+        }
+
+
+        var flightPath = new google.maps.Polyline({
+           path: locations_polyline,
+           geodesic: true,
+           strokeColor: '#FF0000',
+           strokeOpacity: 1.0,
+           strokeWeight: 2
+        });
+
+        flightPath.setMap(map);
+   </script>
+</body>
+
+</html>
