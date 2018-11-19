@@ -5,6 +5,7 @@
    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
    <title>Ubigeos | Mapa </title>
    <script src="https://maps.googleapis.com/maps/api/js?key={{ GOOGLE_API_KEY }}" type="text/javascript"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">   
 </head>
@@ -32,6 +33,13 @@
         <br>
         
         {% if position_render %}
+            <div>
+                <h4 id="origen"></h4>
+            </div>
+            <div>
+                <h4 id="destino"></h4>
+            </div>   
+            </br>
             <div id="map" style="width: 500px; height: 400px;"></div>
         {% endif %}
     </div>
@@ -84,6 +92,73 @@
         });
 
         flightPath.setMap(map);
+        document.getElementById('id_tipoCp').value="";
+        document.getElementById('origen').innerText = "{{origen}}";
+        document.getElementById('destino').innerText = "{{destino}}";
+
+   </script>
+   <script>
+        $(document).ready(function() {
+            var ubOrigen = $('#id_ubigeoOrigen');
+            var ubDestino = $('#id_ubigeoDestino');
+            var tipoCp = $("#id_tipoCp");
+            $('#id_tipoCp option[value=" "]').attr("selected",true);
+
+
+            function getCookie(name) {
+                var cookieValue = null;
+                if (document.cookie && document.cookie !== '') {
+                    var cookies = document.cookie.split(';');
+                    for (var i = 0; i < cookies.length; i++) {
+                        var cookie = jQuery.trim(cookies[i]);
+                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                        }
+                    }
+                }
+                return cookieValue;
+            }
+            var csrftoken = getCookie('csrftoken');
+
+            function csrfSafeMethod(method) {
+                return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+            }
+
+            $.ajaxSetup({
+                beforeSend: function(xhr, settings) {
+                    if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
+                        xhr.setRequestHeader("X-CSRFToken", csrftoken);
+                    }
+                }
+            });
+
+            $("#id_tipoCp").on("change", function() {
+                ubOrigen.find('option').remove();                          
+                ubDestino.find('option').remove();      
+                $('<option>').val('').text('').appendTo(ubOrigen).attr("selected", true);     
+                $('<option>').val('').text('').appendTo(ubDestino).attr("selected", true);   
+                                              
+                if(this.value != ''){                       
+                    $.get('/mapa/cp_filter/', {cp_id: this.value}, function(data){        
+                        if(data.cp_list.length>0){
+                            $.each(data.cp_list, function(key, value) {       
+                                ubOrigen.prop('disabled', false);
+                                ubDestino.prop('disabled', false);
+                                $('<option>').val(value.id).text(value.list).appendTo(ubOrigen);     
+                                $('<option>').val(value.id).text(value.list).appendTo(ubDestino);     
+                            });  
+                        } else {
+                            ubOrigen.prop('disabled', true);
+                            ubDestino.prop('disabled', true);                                                 
+                        }                                          
+                    });
+                } else {
+                    ubOrigen.prop('disabled', true);
+                    ubDestino.prop('disabled', true);                       
+                }
+            });      
+        });
    </script>
 </body>
 
